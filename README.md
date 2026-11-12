@@ -25,9 +25,10 @@ Details and the full bring-up log: [`docs/NOTES.md`](docs/NOTES.md) (Russian), [
   (Halium options, SELinux as the active LSM in permissive mode, built-in audio firmware, LTO off, ...).
 - `kernel/patches/0001-halium-a50.patch` – patches on top of FreshROMs
   `android_kernel_samsung_exynos9610_mint` (`bec0c2aff1ee`, branch `android-14.0`). Includes:
-  EMS early-init guard, KernelSU disabled path, `security.c` hook fix, **`hci_sock_create()` restored**
-  (Samsung stubbed it out, BlueZ then crashed the kernel), Bluetooth `BUG_ON` removed,
-  bring-up safety net (early plain reboot goes to recovery).
+  EMS scheduler early-init guard (boot panic), `security/security.c` hook-chain fix (usercopy panic),
+  **`hci_sock_create()` restored** (Samsung stubbed it out, BlueZ then crashed the kernel), Bluetooth
+  `BUG_ON` removed, bring-up safety net (a plain reboot in the first 3 minutes goes to recovery),
+  plus small fixes for building with clang 21. KernelSU is disabled via config (`CONFIG_KSU=n`).
 - `tools/build-kernel.sh`, `tools/build-boot.sh` – out-of-tree clang build and boot.img packaging.
 - `device/deviceinfo` – UBports-style device info.
 - `overlay/userdata-system-data/` – files that must be placed in `/userdata/system-data/` on the phone
