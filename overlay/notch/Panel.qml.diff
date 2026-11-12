@@ -1,0 +1,64 @@
+--- a/usr/share/lomiri/Panel/Panel.qml
++++ b/usr/share/lomiri/Panel/Panel.qml
+@@ -389,6 +389,19 @@
+             }
+         }
+ 
++        Label {
++            anchors.right: parent.horizontalCenter
++            anchors.rightMargin: __indicators.notchHalfWidth
++            anchors.top: parent.top
++            height: root.minimizedPanelHeight
++            verticalAlignment: Text.AlignVCenter
++            font.family: "Ubuntu"
++            font.weight: Font.Light
++            fontSize: "medium"
++            visible: __indicators.splitStatusBar && __indicators.fullyClosed && __indicators.clockItem !== null
++            text: __indicators.clockItem ? (__indicators.clockItem.leftLabel + " " + __indicators.clockItem.rightLabel).trim() : ""
++        }
++
+         PanelMenu {
+             id: __indicators
+             objectName: "indicators"
+@@ -402,7 +415,14 @@
+             expandedPanelHeight: root.expandedPanelHeight
+             openedHeight: root.height
+ 
+-            overFlowWidth: width - appMenuClear
++            // A50 portrait status bar: keep indicators right of the camera.
++            property bool splitStatusBar: root.width < root.height && !root.partialWidth
++            property real notchHalfWidth: units.gu(2)
++            property Item clockItem: null
++
++            overFlowWidth: splitStatusBar && !expanded
++                ? Math.min(width - appMenuClear, width / 2 - notchHalfWidth)
++                : width - appMenuClear
+             enableHint: !callHint.active && !fullscreenMode
+             showOnClick: !callHint.visible
+             panelColor: panelAreaBackground.color
+@@ -429,7 +449,15 @@
+ 
+                 property int ownIndex: index
+                 readonly property bool overflow: parent.width - (x - __indicators.rowContentX) > __indicators.overFlowWidth
+-                readonly property bool hidden: !expanded && (overflow || !indicatorVisible || hideSessionIndicator || hideKeyboardIndicator)
++                readonly property bool isClock: identifier === "ayatana-indicator-datetime"
++                readonly property bool splitClock: isClock && __indicators.splitStatusBar && !expanded
++                readonly property bool hidden: !expanded && (splitClock || overflow || !indicatorVisible || hideSessionIndicator || hideKeyboardIndicator)
++                Component.onCompleted: {
++                    if (isClock) __indicators.clockItem = indicatorItem;
++                }
++                Component.onDestruction: {
++                    if (__indicators.clockItem === indicatorItem) __indicators.clockItem = null;
++                }
+                 // HACK for indicator-session
+                 readonly property bool hideSessionIndicator: identifier == "ayatana-indicator-session" && Math.min(Screen.width, Screen.height) <= units.gu(60)
+                 // HACK for indicator-keyboard
+@@ -447,7 +475,7 @@
+                 opacity: hidden ? 0.0 : 1.0
+                 Behavior on opacity { LomiriNumberAnimation { duration: LomiriAnimation.SnapDuration } }
+ 
+-                width: ((expanded || indicatorVisible) && !hideSessionIndicator && !hideKeyboardIndicator) ? implicitWidth : 0
++                width: !splitClock && (expanded || indicatorVisible) && !hideSessionIndicator && !hideKeyboardIndicator ? implicitWidth : 0
+ 
+                 Behavior on width { LomiriNumberAnimation { duration: LomiriAnimation.SnapDuration } }
+             }

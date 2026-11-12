@@ -1,0 +1,11 @@
+[Unit]
+Description=Halium bring-up: slab/meminfo watcher
+After=local-fs.target
+DefaultDependencies=no
+
+[Service]
+Type=simple
+ExecStart=/bin/sh /userdata/halium-memwatch.sh
+
+[Install]
+WantedBy=multi-user.target
