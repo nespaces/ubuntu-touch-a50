@@ -1,0 +1,40 @@
+#!/bin/sh
+set -eu
+
+android() {
+    lxc-attach -n android -- "$@"
+}
+
+android /system/bin/chown 1000:1000 /dev/gnss_ipc
+android /system/bin/chmod 0660 /dev/gnss_ipc
+android /system/bin/setprop service.bootanim.exit 1
+android /system/bin/setprop ctl.restart gpsd
+
+attempt=0
+until android /system/bin/grep -q ' @GNSSND' /proc/net/unix; do
+    attempt=$((attempt + 1))
+    if [ "$attempt" -ge 60 ]; then
+        echo "Samsung gpsd failed to bind @GNSSND" >&2
+        exit 1
+    fi
+    sleep 0.25
+done
+
+old_pid=$(android /system/bin/getprop init.svc_debug_pid.sec_gnss_service)
+android /system/bin/setprop ctl.restart sec_gnss_service
+attempt=0
+while :; do
+    pid=$(android /system/bin/getprop init.svc_debug_pid.sec_gnss_service)
+    if [ -n "$pid" ] && [ "$pid" != "$old_pid" ] &&
+       [ "$(android /system/bin/getprop init.svc.sec_gnss_service)" = running ] &&
+       android /system/bin/lshal 2>/dev/null | grep -q 'android.hardware.gnss@1.0::IGnss/default'; then
+        echo "Samsung gpsd socket and GNSS HAL ready"
+        exit 0
+    fi
+    attempt=$((attempt + 1))
+    if [ "$attempt" -ge 60 ]; then
+        echo "Samsung GNSS HAL failed to register after restart" >&2
+        exit 1
+    fi
+    sleep 0.25
+done

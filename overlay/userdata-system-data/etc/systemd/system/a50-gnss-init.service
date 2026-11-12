@@ -1,0 +1,15 @@
+[Unit]
+Description=Initialize the Samsung A50 GNSS stack
+Requires=lxc-android-config.service
+After=lxc-android-config.service
+RequiresMountsFor=/userdata/a50-overlays
+Before=lomiri-location-service.service
+
+[Service]
+Type=oneshot
+ExecStart=/userdata/a50-overlays/a50-gnss-init
+RemainAfterExit=yes
+TimeoutStartSec=45
+
+[Install]
+WantedBy=lomiri-location-service.service
