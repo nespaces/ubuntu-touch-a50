@@ -4,6 +4,16 @@ Work-in-progress port of Ubuntu Touch (UBports, Ubuntu 20.04) to the Galaxy A50 
 **Halium 11** and the **Mint** 4.14.194 kernel (FreshROMs `android-14.0`).
 Not an official UBports port. Use at your own risk: you can lose data and soft-brick the device.
 
+## Download and install
+
+**[Download v0.1.0-alpha (TWRP ZIP, 958 MB)](https://github.com/nespaces/ubuntu-touch-a50/releases/tag/v0.1.0-alpha)** — alpha, it can lose data.
+
+1. Galaxy A50 **SM-A505F / SM-A505FN**, unlocked bootloader, TWRP, **stock Android 11** firmware installed (the port uses its `vendor` partition).
+2. TWRP: **Wipe → Format Data → `yes`** (ext4), then **Install** the ZIP, then **Reboot**.
+3. First boot takes several minutes and reboots once by itself. Nothing else to do.
+
+Check the download with `SHA256SUMS` from the release page. To return to Android flash the stock firmware with Odin.
+
 ## Status (2026-11-12)
 
 Full per-feature list in the UBports format: [docs/CHECKLIST.md](docs/CHECKLIST.md). Installable release: one TWRP-flashable ZIP (see Releases).
