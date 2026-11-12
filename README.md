@@ -17,6 +17,7 @@ Not an official UBports port. Use at your own risk: you can lose data and soft-b
 | Proximity | SensorStatus reports near/far and the screen turns off at the ear during a call |
 | GPS | Samsung GNSS initialized by `a50-gnss-init.service` before the Lomiri location service |
 | Modem / SIM | oFono is bound to the Android IRadio 1.4 HAL through the binder plugin (both slots powered/online); not tested with a SIM yet |
+| NFC | tags are detected (Samsung NFC HAL -> `nfcd` binder plugin, adapter `/nfc0`, MIFARE / ISO-DEP / NFC-DEP); NDEF reading is untested (needs an NTAG tag, a bank card has no NDEF so `NFC Tag Editor` reports `Unknown error`) |
 | Volume keys, system sounds | work (needs AppArmor as major LSM + the `SO_PEERSEC` hook below) |
 | Notch ("waterdrop") and rounded corners | works through a Lomiri QML overlay (`overlay/notch`): clock top-left, indicators right of the camera, expanded tabs below it |
 | Memory leak (fixed) | `bluebinder` opened HCI sockets in a loop and Samsung's stubbed `hci_sock_release` leaked each one (~3 GB of `kmalloc-2048` in 40 s, then OOM / black screen). Fixed by restoring `hci_sock_create()`/`hci_sock_release()` |
