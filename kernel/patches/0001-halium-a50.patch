@@ -1,0 +1,276 @@
+diff --git a/drivers/input/touchscreen/of_touchscreen.c b/drivers/input/touchscreen/of_touchscreen.c
+index 8d7f9c8f2..f139fa1c1 100644
+--- a/drivers/input/touchscreen/of_touchscreen.c
++++ b/drivers/input/touchscreen/of_touchscreen.c
+@@ -69,7 +69,7 @@ void touchscreen_parse_properties(struct input_dev *input, bool multitouch,
+ 	struct device *dev = input->dev.parent;
+ 	unsigned int axis;
+ 	unsigned int maximum, fuzz;
+-	bool data_present;
++	bool data_present, fuzz_present;
+ 
+ 	input_alloc_absinfo(input);
+ 	if (!input->absinfo)
+@@ -79,34 +79,34 @@ void touchscreen_parse_properties(struct input_dev *input, bool multitouch,
+ 	data_present = touchscreen_get_prop_u32(dev, "touchscreen-size-x",
+ 						input_abs_get_max(input,
+ 								  axis) + 1,
+-						&maximum) |
+-		       touchscreen_get_prop_u32(dev, "touchscreen-fuzz-x",
++						&maximum);
++	fuzz_present = touchscreen_get_prop_u32(dev, "touchscreen-fuzz-x",
+ 						input_abs_get_fuzz(input, axis),
+ 						&fuzz);
+-	if (data_present)
++	if (data_present || fuzz_present)
+ 		touchscreen_set_params(input, axis, maximum - 1, fuzz);
+ 
+ 	axis = multitouch ? ABS_MT_POSITION_Y : ABS_Y;
+ 	data_present = touchscreen_get_prop_u32(dev, "touchscreen-size-y",
+ 						input_abs_get_max(input,
+ 								  axis) + 1,
+-						&maximum) |
+-		       touchscreen_get_prop_u32(dev, "touchscreen-fuzz-y",
++						&maximum);
++	fuzz_present = touchscreen_get_prop_u32(dev, "touchscreen-fuzz-y",
+ 						input_abs_get_fuzz(input, axis),
+ 						&fuzz);
+-	if (data_present)
++	if (data_present || fuzz_present)
+ 		touchscreen_set_params(input, axis, maximum - 1, fuzz);
+ 
+ 	axis = multitouch ? ABS_MT_PRESSURE : ABS_PRESSURE;
+ 	data_present = touchscreen_get_prop_u32(dev,
+ 						"touchscreen-max-pressure",
+ 						input_abs_get_max(input, axis),
+-						&maximum) |
+-		       touchscreen_get_prop_u32(dev,
++						&maximum);
++	fuzz_present = touchscreen_get_prop_u32(dev,
+ 						"touchscreen-fuzz-pressure",
+ 						input_abs_get_fuzz(input, axis),
+ 						&fuzz);
+-	if (data_present)
++	if (data_present || fuzz_present)
+ 		touchscreen_set_params(input, axis, maximum, fuzz);
+ 
+ 	if (!prop)
+diff --git a/drivers/misc/tzdev/Makefile b/drivers/misc/tzdev/Makefile
+index b51f0b1d9..586d4ceb2 100644
+--- a/drivers/misc/tzdev/Makefile
++++ b/drivers/misc/tzdev/Makefile
+@@ -47,3 +47,7 @@ obj-$(CONFIG_TZ_TELEMETRY)		+= tz_telemetry.o
+ obj-$(CONFIG_TZ_TRANSPORT)		+= tz_transport.o
+ 
+ obj-$(CONFIG_TZDEV_DEBUG)		+= tests/
++
++# Resolve inline .incbin paths when Kbuild uses a separate output directory.
++CFLAGS_tz_deploy_tzar.o += -Wa,-I,$(abspath $(srctree))
++$(obj)/tz_deploy_tzar.o: $(src)/startup.tzar $(src)/startup_old.tzar
+diff --git a/drivers/sensorhub/ssp_platform.c b/drivers/sensorhub/ssp_platform.c
+index 5e1cc5920..e9ddca8d9 100644
+--- a/drivers/sensorhub/ssp_platform.c
++++ b/drivers/sensorhub/ssp_platform.c
+@@ -106,7 +106,7 @@ void save_ram_dump(void *ssp_data)
+ 	contexthub_put_token(ipc);
+ }
+ 
+-int get_sensorhub_dump_size()
++int get_sensorhub_dump_size(void)
+ {
+ 	return ipc_get_chub_mem_size();
+ }
+diff --git a/drivers/soc/samsung/exynos-reboot.c b/drivers/soc/samsung/exynos-reboot.c
+index 9cb6c567b..3dee396d5 100644
+--- a/drivers/soc/samsung/exynos-reboot.c
++++ b/drivers/soc/samsung/exynos-reboot.c
+@@ -288,6 +288,15 @@ static void exynos_reboot(enum reboot_mode mode, const char *cmd)
+ 		}
+ 	}
+ 
++	/*
++	 * Halium bring-up safety net: a plain reboot within 3 minutes of boot
++	 * (reboot loops) goes to recovery so the device stays reachable.
++	 */
++	if ((!cmd || !*cmd) && ktime_to_ms(ktime_get_boottime()) < 180000) {
++		pr_emerg("%s: early reboot, entering recovery\n", __func__);
++		__raw_writel(REBOOT_MODE_RECOVERY, addr);
++	}
++
+ 	/* Check by each SoC */
+ 	soc_id = exynos_soc_info.product_id;
+ 	revision = exynos_soc_info.revision;
+diff --git a/drivers/staging/nanohub/chub_ipc.c b/drivers/staging/nanohub/chub_ipc.c
+index 27e2b7b3d..927166f7f 100644
+--- a/drivers/staging/nanohub/chub_ipc.c
++++ b/drivers/staging/nanohub/chub_ipc.c
+@@ -390,7 +390,7 @@ static void ipc_print_logbuf(void)
+ 		NAME_PREFIX, logbuf->token, logbuf->eq, logbuf->dq, logbuf->size, logbuf->full);
+ }
+ 
+-int ipc_check_reset_valid()
++int ipc_check_reset_valid(void)
+ {
+ 	int i;
+ 	int ret = 0;
+diff --git a/drivers/usb/gadget/function/f_accessory.c b/drivers/usb/gadget/function/f_accessory.c
+index 313c49278..d3ae0a421 100644
+--- a/drivers/usb/gadget/function/f_accessory.c
++++ b/drivers/usb/gadget/function/f_accessory.c
+@@ -86,13 +86,13 @@ struct acc_dev {
+ 	/* online indicates state of function_set_alt & function_unbind
+ 	 * set to 1 when we connect
+ 	 */
+-	int online:1;
++	unsigned int online:1;
+ 
+ 	/* disconnected indicates state of open & release
+ 	 * Set to 1 when we disconnect.
+ 	 * Not cleared until our file is closed.
+ 	 */
+-	int disconnected:1;
++	unsigned int disconnected:1;
+ 
+ 	/* strings sent by the host */
+ 	char manufacturer[ACC_STRING_SIZE];
+diff --git a/kernel/sched/ems/core.c b/kernel/sched/ems/core.c
+index 63c1e2fd0..64cec9570 100644
+--- a/kernel/sched/ems/core.c
++++ b/kernel/sched/ems/core.c
+@@ -1137,7 +1137,8 @@ bool fast_path_eligible(struct tp_env *env)
+ 		return false;
+ 
+ 	/* Cond 5: Previous CPU capacity must be same as start CPU capacity */
+-	if (capacity_max_of(start_cpu) != capacity_max_of(env->src_cpu))
++	if (start_cpu >= nr_cpu_ids ||
++	    capacity_max_of(start_cpu) != capacity_max_of(env->src_cpu))
+ 		return false;
+ 
+ 	/* Cond 6: Previous CPU should be idle */
+@@ -1305,7 +1306,7 @@ out:
+ 	return target_cpu;
+ }
+ 
+-int __init core_init()
++int __init core_init(void)
+ {
+ 	tex_init();
+ 	prefer_cpu_init();
+diff --git a/kernel/sched/ems/energy_table.c b/kernel/sched/ems/energy_table.c
+index 0cfd733d2..78d163c01 100644
+--- a/kernel/sched/ems/energy_table.c
++++ b/kernel/sched/ems/energy_table.c
+@@ -66,12 +66,12 @@ static bool energy_initialized;
+ 
+ void ems_set_energy_table_status(bool status)
+ {
+-	energy_initialized = status;
++	smp_store_release(&energy_initialized, status);
+ }
+ 
+ bool ems_get_energy_table_status(void)
+ {
+-	return energy_initialized;
++	return smp_load_acquire(&energy_initialized);
+ }
+ 
+ inline unsigned int et_get_cpu_mips(unsigned int cpu)
+diff --git a/kernel/sched/ems/main.c b/kernel/sched/ems/main.c
+index 335750956..fb8209af5 100644
+--- a/kernel/sched/ems/main.c
++++ b/kernel/sched/ems/main.c
+@@ -128,9 +128,11 @@ int ems_need_active_balance(enum cpu_idle_type idle, struct sched_domain *sd,
+ 
+ int ems_select_task_rq_fair(struct task_struct *p, int prev_cpu, int sync, int wake)
+ {
+-	int cpu;
++	int cpu = -1;
+ 
+-	cpu = __ems_select_task_rq_fair(p, prev_cpu, sync, wake);
++	/* Before cpufreq initializes the energy tables, fall back to CFS. */
++	if (ems_get_energy_table_status())
++		cpu = __ems_select_task_rq_fair(p, prev_cpu, sync, wake);
+ 
+ 	EMS_CPU(p) = cpu;
+ 	return cpu;
+diff --git a/mm/zsmalloc.c b/mm/zsmalloc.c
+index f694009f6..84be4b72c 100644
+--- a/mm/zsmalloc.c
++++ b/mm/zsmalloc.c
+@@ -2525,7 +2525,7 @@ static bool zs_compactable(struct zs_pool *pool, unsigned int pages)
+ 	return false;
+ }
+ 
+-void try_schedule_zs_compact()
++void try_schedule_zs_compact(void)
+ {
+ 	static unsigned long resume = INITIAL_JIFFIES;
+ 
+diff --git a/net/bluetooth/af_bluetooth.c b/net/bluetooth/af_bluetooth.c
+index ba42b700a..c6ecd0573 100644
+--- a/net/bluetooth/af_bluetooth.c
++++ b/net/bluetooth/af_bluetooth.c
+@@ -68,8 +68,9 @@ static const char *const bt_slock_key_strings[BT_MAX_PROTO] = {
+ 
+ void bt_sock_reclassify_lock(struct sock *sk, int proto)
+ {
+-	BUG_ON(!sk);
+-	BUG_ON(!sock_allow_reclassification(sk));
++	/* Halium: lock reclassification is a lockdep-only helper; never panic. */
++	if (WARN_ON_ONCE(!sk || !sock_allow_reclassification(sk)))
++		return;
+ 
+ 	sock_lock_init_class_and_name(sk,
+ 			bt_slock_key_strings[proto], &bt_slock_key[proto],
+diff --git a/net/bluetooth/hci_sock.c b/net/bluetooth/hci_sock.c
+index fc32f5bc0..ed441d991 100644
+--- a/net/bluetooth/hci_sock.c
++++ b/net/bluetooth/hci_sock.c
+@@ -2003,7 +2003,6 @@ static struct proto hci_sk_proto = {
+ static int hci_sock_create(struct net *net, struct socket *sock, int protocol,
+ 			   int kern)
+ {
+-    /*
+ 	struct sock *sk;
+ 
+ 	BT_DBG("sock %p", sock);
+@@ -2027,7 +2026,6 @@ static int hci_sock_create(struct net *net, struct socket *sock, int protocol,
+ 	sk->sk_state = BT_OPEN;
+ 
+ 	bt_sock_link(&hci_sk_list, sk);
+-    */
+ 	return 0;
+ }
+ 
+diff --git a/security/sdp/dd_core.c b/security/sdp/dd_core.c
+index 53606195e..0f00f2ca2 100644
+--- a/security/sdp/dd_core.c
++++ b/security/sdp/dd_core.c
+@@ -841,7 +841,7 @@ unsigned int dd_lock_state = 1; // 1: locked 0: unlocked
+ module_param_named(lock_state, dd_lock_state, uint, 0600);
+ MODULE_PARM_DESC(lock_state, "ddar lock status");
+ 
+-int dd_is_user_deamon_locked() {
++int dd_is_user_deamon_locked(void) {
+ 	return dd_lock_state;
+ }
+ 
+diff --git a/security/security.c b/security/security.c
+index 2d3b44b74..759df808c 100644
+--- a/security/security.c
++++ b/security/security.c
+@@ -214,9 +214,11 @@ EXPORT_SYMBOL(unregister_lsm_notifier);
+ 	do {							\
+ 		struct security_hook_list *P;			\
+ 								\
+-		RC = security_integrity_current();		\
+-		if (RC != 0)							\
+-			break;								\
++		int integrity = security_integrity_current();		\
++		if (integrity) {					\
++			RC = integrity;				\
++			break;					\
++		}						\
+ 		list_for_each_entry(P, &security_hook_heads.FUNC, list) { \
+ 			RC = P->hook.FUNC(__VA_ARGS__);		\
+ 			if (RC != 0)				\
