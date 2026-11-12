@@ -12,11 +12,11 @@ Not an official UBports port. Use at your own risk: you can lose data and soft-b
 | Display, GPU (Mali-G72), Lomiri UI | works, smooth |
 | Touch, camera, Wi-Fi | work |
 | USB (MTP, usb-moded) | works (needs the kernel configfs patch + vendor USB init overlay) |
-| Bluetooth | `CONFIG_RFKILL` enabled and `hci_sock_create()` restored; `bluebinder` creates the HCI adapter, pairing not verified |
-| Audio | DSP/amp firmware built into the kernel; `pulseaudio` crashes with the Samsung audio HAL (SIGSEGV), droid module disabled for now, no sound |
+| Bluetooth | `CONFIG_RFKILL` enabled, HCI socket code restored; adapter appears in settings, but is not fully functional yet |
+| Audio | DSP/amp firmware built into the kernel. Samsung audio HAL has no `create_audio_patch` (NULL) and crashed `pulseaudio`; `use_legacy_stream_set_parameters=true` is set via `PULSE_MODULES_DROID_EXTRA_CARD_ARGS` (see `overlay/rootfs/etc/systemd/user`), result being verified |
 | Volume keys | events reach the kernel (KEY_VOLUMEUP/DOWN), UI side depends on audio |
 | Notch ("waterdrop") | status bar items overlap it; a Lomiri Panel.qml diff is in `overlay/notch` (untested) |
-| **Known bug** | kernel `kmalloc-2048` slab grows ~100 MB/s a few seconds after the UI starts, then OOM kills Lomiri (black screen). Under investigation, see `docs/NOTES.md` |
+| Memory leak (fixed) | `bluebinder` opened HCI sockets in a loop and Samsung's stubbed `hci_sock_release` leaked each one (~3 GB of `kmalloc-2048` in 40 s, then OOM / black screen). Fixed by restoring `hci_sock_create()`/`hci_sock_release()` |
 
 Details and the full bring-up log: [`docs/NOTES.md`](docs/NOTES.md) (Russian), [`docs/PROJECT.md`](docs/PROJECT.md),
 helper investigations in [`docs/codex`](docs/codex).
