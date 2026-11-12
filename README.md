@@ -15,7 +15,7 @@ Not an official UBports port. Use at your own risk: you can lose data and soft-b
 | Bluetooth | works: HCI socket bind/ioctl/getname/release restored in the kernel (Samsung stubbed them), `bluebinder` brings `hci0` up, discovery works, AirPods Pro (A2DP) and a mouse (UHID udev rule) verified. `bluebinder` is started once with `Restart=no` because a restart loop shuts the shared WLBT chip (and Wi-Fi) down |
 | Audio | works: speaker via a direct ALSA sink on `hw:0,0` (ABOX RDMA0 -> UAIF2 -> TFA9872) with the mixer route from `/vendor/etc/mixer_paths.xml`; the Samsung audio HAL in pulse-droid is a stub (NULL `create_audio_patch`) and is not used. Small periods (512 frames) are needed because the ABOX `hw_ptr` is coarse |
 | Proximity | SensorStatus reports near/far and the screen turns off at the ear during a call |
-| GPS | Samsung GNSS initialized by `a50-gnss-init.service` before the Lomiri location service |
+| GPS | Samsung GNSS initialized by `a50-gnss-init.service` before the Lomiri location service; `lomiri-location-service` runs with the GPS provider only (`zz-a50-gps-only.conf`): the default `remote::Provider` returned a wrong fixed position (Bergen) that weather apps used |
 | Modem / SIM | oFono is bound to the Android IRadio 1.4 HAL through the binder plugin (both slots powered/online); not tested with a SIM yet |
 | NFC | tags are detected (Samsung NFC HAL -> `nfcd` binder plugin, adapter `/nfc0`, MIFARE / ISO-DEP / NFC-DEP); NDEF reading is untested (needs an NTAG tag, a bank card has no NDEF so `NFC Tag Editor` reports `Unknown error`) |
 | Volume keys, system sounds | work (needs AppArmor as major LSM + the `SO_PEERSEC` hook below) |
