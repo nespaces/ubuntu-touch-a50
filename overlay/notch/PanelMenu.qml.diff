@@ -1,0 +1,30 @@
+--- a/usr/share/lomiri/Panel/PanelMenu.qml
++++ b/usr/share/lomiri/Panel/PanelMenu.qml
+@@ -35,6 +35,10 @@
+     property bool showOnClick: true
+     property color panelColor: theme.palette.normal.background
+     property real menuContentX: 0
++    // Halium A50: notch/rounded-corner layout (see Panel.qml)
++    property real dragHandleWidth: 0
++    property real barRightMargin: 0
++    property alias expandedTopInset: bar.expandedTopInset
+ 
+     property alias alignment: bar.alignment
+     property alias hideRow: bar.hideRow
+@@ -182,6 +186,7 @@
+         anchors {
+             left: parent.left
+             right: parent.right
++            rightMargin: root.barRightMargin
+         }
+         expanded: false
+         enableLateralChanges: false
+@@ -240,7 +245,7 @@
+         anchors.left: alignment == Qt.AlignLeft ? parent.left : undefined
+         anchors.leftMargin: -root.menuContentX
+         anchors.right: alignment == Qt.AlignRight ? parent.right : undefined
+-        width: root.overFlowWidth + root.menuContentX
++        width: Math.max(root.overFlowWidth, root.dragHandleWidth) + root.menuContentX
+         height: minimizedPanelHeight
+         direction: Direction.Downwards
+         enabled: !root.shown && root.available && !hideAnimation.running && !showAnimation.running

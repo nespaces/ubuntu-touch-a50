@@ -1,0 +1,12 @@
+[Unit]
+Description=Halium A50: Lomiri notch/rounded-corner overlay (bind mounts)
+Before=lightdm.service
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/bin/sh -c "for f in Panel/Panel.qml Panel/PanelMenu.qml Panel/PanelBar.qml Shell.qml; do b=$(basename $f); mountpoint -q /usr/share/lomiri/$f || mount --bind /userdata/a50-overlays/$b /usr/share/lomiri/$f; done"
+ExecStop=/bin/sh -c "for f in Panel/Panel.qml Panel/PanelMenu.qml Panel/PanelBar.qml Shell.qml; do umount /usr/share/lomiri/$f 2>/dev/null; done"
+
+[Install]
+WantedBy=multi-user.target

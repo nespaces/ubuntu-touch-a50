@@ -1,0 +1,21 @@
+--- a/usr/share/lomiri/Panel/PanelBar.qml
++++ b/usr/share/lomiri/Panel/PanelBar.qml
+@@ -31,6 +31,8 @@
+     property real lateralPosition: -1
+     property int alignment: Qt.AlignRight
+     readonly property int rowContentX: row.contentX
++    // Halium A50: keep the expanded tab row below the camera cut-out
++    property real expandedTopInset: 0
+ 
+     property alias hideRow: row.hideRow
+     property alias rowItemDelegate: row.delegate
+@@ -207,6 +209,9 @@
+                 anchors {
+                     top: parent.top
+                     bottom: parent.bottom
++                    // the Flickable is rotated by 180 degrees when right-aligned, so top/bottom swap
++                    topMargin: (root.expanded && root.alignment != Qt.AlignRight) ? root.expandedTopInset : 0
++                    bottomMargin: (root.expanded && root.alignment == Qt.AlignRight) ? root.expandedTopInset : 0
+                 }
+ 
+                 // Compensate for the Flickable rotation (ie, counter-rotate)

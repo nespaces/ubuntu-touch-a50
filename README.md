@@ -15,7 +15,7 @@ Not an official UBports port. Use at your own risk: you can lose data and soft-b
 | Bluetooth | not working yet: `hci0` stays DOWN, `bluebinder` restarts in a loop and each restart shuts the shared WLBT chip down (it also kills Wi-Fi), so `bluebinder` is masked for now |
 | Audio | works: speaker via a direct ALSA sink on `hw:0,0` (ABOX RDMA0 -> UAIF2 -> TFA9872) with the mixer route from `/vendor/etc/mixer_paths.xml`; the Samsung audio HAL in pulse-droid is a stub (NULL `create_audio_patch`) and is not used. Small periods (512 frames) are needed because the ABOX `hw_ptr` is coarse |
 | Volume keys, system sounds | work (needs AppArmor as major LSM + the `SO_PEERSEC` hook below) |
-| Notch ("waterdrop") | status bar items overlap it; a Lomiri Panel.qml diff is in `overlay/notch` (untested) |
+| Notch ("waterdrop") and rounded corners | works through a Lomiri QML overlay (`overlay/notch`): clock top-left, indicators right of the camera, expanded tabs below it |
 | Memory leak (fixed) | `bluebinder` opened HCI sockets in a loop and Samsung's stubbed `hci_sock_release` leaked each one (~3 GB of `kmalloc-2048` in 40 s, then OOM / black screen). Fixed by restoring `hci_sock_create()`/`hci_sock_release()` |
 
 Details and the full bring-up log: [`docs/NOTES.md`](docs/NOTES.md) (Russian), [`docs/PROJECT.md`](docs/PROJECT.md),
@@ -49,7 +49,7 @@ helper investigations in [`docs/codex`](docs/codex).
   - `halium-audio-route`, `halium-audio-prio`, `halium-wlan-up`, `halium-wifi-single-sta` services and `overlay/userdata/*.sh` – speaker route, PulseAudio thread priority, Wi-Fi fixes; `home-phablet/.config/systemd/user/halium-alsa-sink.service` – the ALSA sink.
   - `halium-sshd.service` – debug sshd (key-only, add your own key to `/etc/ssh/halium_authorized_keys`).
   - `halium-livelog.service`, `halium-memwatch.service` (+ `overlay/userdata/halium-memwatch.sh`) – debug only: live logs and slab/memory watcher in `/userdata/live`.
-- `overlay/notch/` – experimental Lomiri panel diff for the notch.
+- `overlay/notch/` – Lomiri QML patches (Panel, PanelMenu, PanelBar, Shell) for the notch and rounded corners, installed by bind mounts (`halium-notch.service`).
 
 ## Not included (on purpose)
 

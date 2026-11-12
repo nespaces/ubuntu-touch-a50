@@ -1,0 +1,25 @@
+--- a/usr/share/lomiri/Shell.qml
++++ b/usr/share/lomiri/Shell.qml
+@@ -943,6 +943,22 @@
+     }
+     BrightnessControl {}
+ 
++    // Halium A50: clock in the top-left corner, above the launcher/drawer and every other layer
++    Label {
++        id: a50Clock
++        z: shutdownFadeOutRectangle.z - 1
++        anchors.left: parent.left
++        anchors.leftMargin: units.gu(3.5)
++        anchors.top: parent.top
++        height: panel.minimizedPanelHeight
++        verticalAlignment: Text.AlignVCenter
++        font.family: "Ubuntu"
++        font.weight: Font.Light
++        fontSize: "medium"
++        visible: panel.splitClockVisible
++        text: panel.splitClockText
++    }
++
+     Rectangle {
+         id: shutdownFadeOutRectangle
+         z: cursor.z + 1
