@@ -11,7 +11,17 @@
      property real panelAreaShowProgress: 1.0
      property bool greeterShown: false
      property bool hasKeyboard: false
-@@ -399,10 +403,22 @@
+@@ -344,7 +348,8 @@
+             id: panelTitleHolder
+             anchors {
+                 left: parent.left
+-                leftMargin: units.gu(1)
++                // A50: keep the title off the rounded corner in landscape
++                leftMargin: root.width > root.height ? units.gu(3.5) : units.gu(1)
+                 right: __indicators.left
+                 rightMargin: units.gu(1)
+             }
+@@ -399,10 +404,22 @@
              }
              width: root.menuWidth
              minimizedPanelHeight: root.minimizedPanelHeight
@@ -28,7 +38,7 @@
 +            property Item clockItem: null
 +            // A50: keep the whole top edge a pull-down handle and inset the row from the rounded corner
 +            dragHandleWidth: width - appMenuClear
-+            barRightMargin: (splitStatusBar && !expanded) ? units.gu(3.5) : 0
++            barRightMargin: ((splitStatusBar || root.width > root.height) && !expanded) ? units.gu(3.5) : 0
 +
 +            overFlowWidth: splitStatusBar && !expanded
 +                ? Math.min(width - appMenuClear, width / 2 - notchHalfWidth)
@@ -36,7 +46,7 @@
              enableHint: !callHint.active && !fullscreenMode
              showOnClick: !callHint.visible
              panelColor: panelAreaBackground.color
-@@ -429,7 +445,15 @@
+@@ -429,7 +446,15 @@
  
                  property int ownIndex: index
                  readonly property bool overflow: parent.width - (x - __indicators.rowContentX) > __indicators.overFlowWidth
@@ -53,7 +63,7 @@
                  // HACK for indicator-session
                  readonly property bool hideSessionIndicator: identifier == "ayatana-indicator-session" && Math.min(Screen.width, Screen.height) <= units.gu(60)
                  // HACK for indicator-keyboard
-@@ -447,7 +471,7 @@
+@@ -447,7 +472,7 @@
                  opacity: hidden ? 0.0 : 1.0
                  Behavior on opacity { LomiriNumberAnimation { duration: LomiriAnimation.SnapDuration } }
  

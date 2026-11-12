@@ -1,0 +1,3 @@
+Release: v0.1.0-alpha (2026-11-12)
+Requires: SM-A505F/FN, unlocked bootloader, TWRP,
+stock Android 11 vendor, /data formatted as ext4.

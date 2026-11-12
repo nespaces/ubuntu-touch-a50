@@ -1,0 +1,15 @@
+[Unit]
+Description=Galaxy A50 Ubuntu Touch first-boot setup
+ConditionPathExists=!/userdata/.a50-installed-v1
+After=local-fs.target lxc-android-config.service
+Before=lightdm.service
+
+[Service]
+Type=oneshot
+ExecStart=/bin/sh /usr/libexec/a50-firstboot.sh
+Restart=on-failure
+RestartSec=20
+TimeoutStartSec=300
+
+[Install]
+WantedBy=multi-user.target

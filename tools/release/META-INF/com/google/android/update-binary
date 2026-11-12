@@ -1,0 +1,77 @@
+#!/sbin/sh
+# Ubuntu Touch (Halium 11) for Samsung Galaxy A50 (SM-A505F/FN, Exynos 9610) - TWRP installer
+OUTFD=$2
+ZIP=$3
+ui_print() { echo "ui_print $1" > /proc/self/fd/$OUTFD; echo "ui_print" > /proc/self/fd/$OUTFD; }
+abort() { ui_print " "; ui_print "ERROR: $1"; ui_print "Nothing was changed after this point."; exit 1; }
+
+ui_print "================================================"
+ui_print " Ubuntu Touch for Samsung Galaxy A50 (Exynos 9610)"
+ui_print " Halium 11, kernel 4.14.194 (Mint), Lomiri"
+ui_print "================================================"
+
+TMP=/tmp/a50
+mkdir -p $TMP
+unzip -o "$ZIP" release.info checksums.sha256 boot.img -d $TMP >/dev/null 2>&1 || abort "cannot read the zip"
+cat $TMP/release.info | while read l; do ui_print "$l"; done
+
+# --- device and partition checks ---
+HW=$(getprop ro.boot.hardware)
+BOOTDEV=/dev/block/by-name/boot
+[ -e $BOOTDEV ] || abort "no boot partition: is this a Galaxy A50?"
+case "$(getprop ro.product.device)$(getprop ro.boot.em.model)$HW" in
+  *a50*|*A505*|*exynos9610*) ;;
+  *) abort "this does not look like a Galaxy A50 (SM-A505): $(getprop ro.product.device) $HW" ;;
+esac
+
+ui_print "Checking /data ..."
+mount /data 2>/dev/null
+FS=$(mount | grep " /data " | head -1 | sed -e 's/.* type \([a-z0-9]*\) .*/\1/')
+[ "$FS" = "ext4" ] || abort "/data is '$FS'. In TWRP use Wipe > Format Data and choose ext4, then flash again."
+FREE=$(df -k /data | tail -1 | awk '{print $4}')
+[ "$FREE" -gt 6000000 ] || abort "less than 6 GB free on /data"
+[ -e /data/rootfs.img ] && ui_print "Existing /data/rootfs.img will be replaced."
+
+ui_print "Checking the vendor partition (needs stock Android 11) ..."
+VC=/tmp/vendor_check
+mkdir -p $VC
+mount -o ro /dev/block/by-name/vendor $VC 2>/dev/null || mount -t ext4 -o ro /dev/block/by-name/vendor $VC 2>/dev/null || abort "cannot mount the vendor partition"
+SDK=$(grep "^ro.vendor.build.version.sdk=" $VC/build.prop | head -1 | sed "s/.*=//")
+REL=$(grep "^ro.vendor.build.version.release=" $VC/build.prop | head -1 | sed "s/.*=//")
+umount $VC 2>/dev/null
+ui_print "Vendor: Android ${REL:-?} (SDK ${SDK:-?})"
+[ "$SDK" = "30" ] || abort "vendor is not Android 11 (SDK 30). Flash the stock Android 11 firmware (A505F/FN) with Odin first."
+
+# --- boot image ---
+ui_print "Flashing boot image ..."
+SIZE=$(stat -c %s $TMP/boot.img)
+dd if=$TMP/boot.img of=$BOOTDEV bs=4M 2>/dev/null || abort "boot flash failed"
+sync
+WANT=$(grep " boot.img$" $TMP/checksums.sha256 | cut -d' ' -f1)
+GOT=$(dd if=$BOOTDEV bs=1 count=$SIZE 2>/dev/null | sha256sum | cut -d' ' -f1)
+[ "$WANT" = "$GOT" ] || abort "boot partition verification failed"
+ui_print "Boot image OK."
+
+# --- system images ---
+ui_print "Writing Ubuntu Touch rootfs (about 2.8 GB, please wait) ..."
+unzip -p "$ZIP" rootfs.img.gz | gunzip > /data/rootfs.img || abort "rootfs write failed (disk full?)"
+chmod 666 /data/rootfs.img
+ui_print "Writing Android (Halium) system image ..."
+unzip -p "$ZIP" android-rootfs.img.gz | gunzip > /data/android-rootfs.img || abort "android image write failed"
+chmod 600 /data/android-rootfs.img
+sync
+
+ui_print "Verifying images ..."
+for f in rootfs android-rootfs; do
+  W=$(grep " $f.img$" $TMP/checksums.sha256 | cut -d' ' -f1)
+  G=$(sha256sum /data/$f.img | cut -d' ' -f1)
+  [ "$W" = "$G" ] || abort "$f.img checksum mismatch"
+done
+rm -f /data/.a50-installed-v1
+
+ui_print " "
+ui_print "Done. Reboot to system."
+ui_print "The first boot takes several minutes and the phone"
+ui_print "reboots once by itself while the A50 setup is applied."
+rm -rf $TMP
+exit 0

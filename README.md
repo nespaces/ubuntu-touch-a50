@@ -6,12 +6,14 @@ Not an official UBports port. Use at your own risk: you can lose data and soft-b
 
 ## Status (2026-11-12)
 
+Full per-feature list in the UBports format: [docs/CHECKLIST.md](docs/CHECKLIST.md). Installable release: one TWRP-flashable ZIP (see Releases).
+
 | Area | State |
 |---|---|
 | Kernel, Halium initramfs, systemd, LXC Android container | works |
 | Display, GPU (Mali-G72), Lomiri UI | works, smooth |
 | Touch, camera, Wi-Fi | work (Wi-Fi: only `wlan0` is managed by NetworkManager, a second STA interface crashes the SCSC firmware; `wlan0` is kept up by a small service) |
-| USB (MTP, RNDIS, ssh) | works (kernel configfs patch + vendor USB init overlay) |
+| USB (MTP, RNDIS, ssh) | works (kernel configfs patch + vendor USB init overlay; `usb_moded` runs with `-f` because Samsung reports a PC port as a charger, and the IDs in `usb-moded.d` are decimal because configfs parses `04e8` as octal) |
 | Bluetooth | works: HCI socket bind/ioctl/getname/release restored in the kernel (Samsung stubbed them), `bluebinder` brings `hci0` up, discovery works, AirPods Pro (A2DP) and a mouse (UHID udev rule) verified. `bluebinder` is started once with `Restart=no` because a restart loop shuts the shared WLBT chip (and Wi-Fi) down |
 | Audio | works: speaker via a direct ALSA sink on `hw:0,0` (ABOX RDMA0 -> UAIF2 -> TFA9872) with the mixer route from `/vendor/etc/mixer_paths.xml`; the Samsung audio HAL in pulse-droid is a stub (NULL `create_audio_patch`) and is not used. Small periods (512 frames) are needed because the ABOX `hw_ptr` is coarse |
 | Proximity | SensorStatus reports near/far and the screen turns off at the ear during a call |
