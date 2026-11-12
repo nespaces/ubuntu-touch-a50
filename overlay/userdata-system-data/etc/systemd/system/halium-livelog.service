@@ -1,0 +1,11 @@
+[Unit]
+Description=Halium bring-up: live logs to /userdata
+After=local-fs.target
+DefaultDependencies=no
+
+[Service]
+Type=simple
+ExecStart=/bin/sh -c 'D=/userdata/live; mkdir -p $D; [ -f $D/journal.txt ] && mv -f $D/journal.txt $D/journal.prev.txt; [ -f $D/dmesg.txt ] && mv -f $D/dmesg.txt $D/dmesg.prev.txt; dmesg -w >> $D/dmesg.txt 2>&1 & (while sleep 3; do sync -f $D; done) & exec journalctl -f -o short-monotonic >> $D/journal.txt 2>&1'
+
+[Install]
+WantedBy=multi-user.target

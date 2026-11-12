@@ -1,0 +1,1 @@
+# Halium: the Ubuntu side (usb-moded) owns the USB gadget; Android must not touch configfs.

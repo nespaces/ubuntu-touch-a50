@@ -1,0 +1,5 @@
+# Samsung Galaxy A50 (Exynos 9610): let the phablet session reach Android HAL/GPU devices.
+ACTION=="add", KERNEL=="binder|hwbinder|vndbinder", MODE="0666"
+ACTION=="add", KERNEL=="ion|ashmem|mali0|mali", MODE="0666"
+ACTION=="add", SUBSYSTEM=="graphics", MODE="0666"
+ACTION=="add", SUBSYSTEM=="sync", MODE="0666"
