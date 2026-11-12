@@ -1,0 +1,12 @@
+[Unit]
+Description=Return A50 playback to the ALSA speaker after Bluetooth disconnect
+After=halium-alsa-sink.service
+Requires=halium-alsa-sink.service
+
+[Service]
+ExecStart=/bin/sh %h/.local/bin/halium-speaker-fallback.sh
+Restart=always
+RestartSec=3
+
+[Install]
+WantedBy=default.target

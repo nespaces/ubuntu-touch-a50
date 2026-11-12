@@ -1,0 +1,9 @@
+[Unit]
+Description=A50 oFono slot configuration
+RequiresMountsFor=/userdata
+
+[Mount]
+What=/userdata/a50-ofono-config
+Where=/etc/ofono
+Type=none
+Options=bind

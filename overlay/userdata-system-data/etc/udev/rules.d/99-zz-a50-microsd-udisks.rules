@@ -1,0 +1,1 @@
+SUBSYSTEM=="block", KERNEL=="mmcblk[0-9]*", ATTRS{type}=="SD", ENV{UDISKS_SYSTEM}="0"
