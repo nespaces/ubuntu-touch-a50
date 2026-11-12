@@ -1,0 +1,11 @@
+[Unit]
+Description=Samsung A50 proximity input
+Before=sensorfwd.service
+RequiresMountsFor=/userdata/a50-overlays
+
+[Service]
+Type=notify
+ExecStart=/usr/bin/python3 /userdata/a50-overlays/a50-proximity.py
+RuntimeDirectory=a50-proximity
+Restart=on-failure
+TimeoutStartSec=10
