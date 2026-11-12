@@ -132,8 +132,16 @@ CONFIG_ANDROID_BINDER_DEVICES="binder,hwbinder,vndbinder,anbox-binder,anbox-hwbi
 CONFIG_KSU=n
 
 # Samsung passes console=ram in DT and ignores the boot header cmdline.
-CONFIG_CMDLINE="quiet androidboot.init_fatal_panic=true androidboot.init_fatal_reboot_target=recovery rcu_nocbs=0-3 noirqdebug nosoftlockup mce=ignore_ce cgroup_disable=pressure console=tty0 security=selinux selinux=1 enforcing=0 androidboot.selinux=permissive systemd.log_target=kmsg systemd.log_level=info"
+CONFIG_CMDLINE="quiet androidboot.init_fatal_panic=true androidboot.init_fatal_reboot_target=recovery rcu_nocbs=0-3 noirqdebug nosoftlockup mce=ignore_ce cgroup_disable=pressure console=tty0 security=selinux selinux=1 enforcing=0 androidboot.selinux=permissive systemd.log_target=kmsg systemd.log_level=info slub_debug=U,kmalloc-2048"
 
 # Audio DSP (ABOX/calliope) and TFA9872 amp firmware must exist at driver probe, before rootfs is mounted.
 CONFIG_EXTRA_FIRMWARE="calliope_sram.bin calliope_dram.bin calliope_iva.bin Tfa9872.cnt"
 CONFIG_EXTRA_FIRMWARE_DIR="firmware"
+
+# Bluetooth (bluebinder) needs /dev/rfkill
+CONFIG_RFKILL=y
+CONFIG_RFKILL_INPUT=y
+
+
+# /proc/slabinfo for leak hunting
+CONFIG_SLUB_DEBUG=y

@@ -113,6 +113,44 @@ index 27e2b7b3d..927166f7f 100644
  {
  	int i;
  	int ret = 0;
+diff --git a/drivers/usb/gadget/configfs.c b/drivers/usb/gadget/configfs.c
+index c8ba5960a..67bf377c6 100644
+--- a/drivers/usb/gadget/configfs.c
++++ b/drivers/usb/gadget/configfs.c
+@@ -563,9 +563,14 @@ static bool is_symboliclink_change_mode(struct config_usb_cfg *cfg)
+ {
+ 	struct gadget_config_name *cn;
+ 
++	/* Halium: never use Samsung's deferred symlink mode. */
++	if (1)
++		return false;
++
+ 	if (!list_empty(&cfg->string_list)) {
+ 		list_for_each_entry(cn, &cfg->string_list, list) {
+-			if (strcmp(cn->configuration, "Conf 1") != 0)
++			/* Halium: usb-moded may not set the configuration string yet. */
++			if (cn->configuration && strcmp(cn->configuration, "Conf 1") != 0)
+ 				return true;
+ 		}
+ 	}
+@@ -707,12 +712,12 @@ static int config_usb_cfg_link(
+ 		goto out;
+ 	}
+ 
+-#ifdef CONFIG_USB_CONFIGFS_UEVENT
+-	list_add_tail(&f->list, &gi->linked_func);
+-#else
+-	/* stash the function until we bind it to the gadget */
++	/*
++	 * Halium: use stock configfs semantics. Samsung's UEVENT mode parks the
++	 * function in gi->linked_func until Android writes android0/functions,
++	 * which usb-moded never does; the gadget then fails to bind with -EINVAL.
++	 */
+ 	list_add_tail(&f->list, &cfg->func_list);
+-#endif
+ 	ret = 0;
+ out:
+ 	mutex_unlock(&gi->lock);
 diff --git a/drivers/usb/gadget/function/f_accessory.c b/drivers/usb/gadget/function/f_accessory.c
 index 313c49278..d3ae0a421 100644
 --- a/drivers/usb/gadget/function/f_accessory.c
