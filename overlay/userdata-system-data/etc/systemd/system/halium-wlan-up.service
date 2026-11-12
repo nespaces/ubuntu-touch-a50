@@ -1,0 +1,11 @@
+[Unit]
+Description=Halium A50: keep wlan0 up (SCSC leaves it down after boot)
+After=NetworkManager.service
+Wants=NetworkManager.service
+
+[Service]
+ExecStart=/bin/sh /userdata/halium-wlan-keepup.sh
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target

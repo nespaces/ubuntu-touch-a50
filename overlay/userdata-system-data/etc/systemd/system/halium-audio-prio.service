@@ -1,0 +1,10 @@
+[Unit]
+Description=Halium A50: raise PulseAudio thread priority
+After=local-fs.target
+
+[Service]
+ExecStart=/bin/sh /userdata/halium-audio-prio.sh
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target

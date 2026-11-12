@@ -1,0 +1,12 @@
+[Unit]
+Description=Halium A50: ABOX speaker route
+After=sound.target local-fs.target
+Before=lomiri.service
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/bin/sh /userdata/halium-audio-route.sh
+
+[Install]
+WantedBy=multi-user.target

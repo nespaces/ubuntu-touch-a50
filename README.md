@@ -10,11 +10,11 @@ Not an official UBports port. Use at your own risk: you can lose data and soft-b
 |---|---|
 | Kernel, Halium initramfs, systemd, LXC Android container | works |
 | Display, GPU (Mali-G72), Lomiri UI | works, smooth |
-| Touch, camera, Wi-Fi | work |
-| USB (MTP, usb-moded) | works (needs the kernel configfs patch + vendor USB init overlay) |
-| Bluetooth | `CONFIG_RFKILL` enabled, HCI socket code restored; adapter appears in settings, but is not fully functional yet |
-| Audio | DSP/amp firmware built into the kernel. Samsung audio HAL has no `create_audio_patch` (NULL) and crashed `pulseaudio`; `use_legacy_stream_set_parameters=true` is set via `PULSE_MODULES_DROID_EXTRA_CARD_ARGS` (see `overlay/rootfs/etc/systemd/user`), result being verified |
-| Volume keys | events reach the kernel (KEY_VOLUMEUP/DOWN), UI side depends on audio |
+| Touch, camera, Wi-Fi | work (Wi-Fi: only `wlan0` is managed by NetworkManager, a second STA interface crashes the SCSC firmware; `wlan0` is kept up by a small service) |
+| USB (MTP, RNDIS, ssh) | works (kernel configfs patch + vendor USB init overlay) |
+| Bluetooth | not working yet: `hci0` stays DOWN, `bluebinder` restarts in a loop and each restart shuts the shared WLBT chip down (it also kills Wi-Fi), so `bluebinder` is masked for now |
+| Audio | works: speaker via a direct ALSA sink on `hw:0,0` (ABOX RDMA0 -> UAIF2 -> TFA9872) with the mixer route from `/vendor/etc/mixer_paths.xml`; the Samsung audio HAL in pulse-droid is a stub (NULL `create_audio_patch`) and is not used. Small periods (512 frames) are needed because the ABOX `hw_ptr` is coarse |
+| Volume keys, system sounds | work (needs AppArmor as major LSM + the `SO_PEERSEC` hook below) |
 | Notch ("waterdrop") | status bar items overlap it; a Lomiri Panel.qml diff is in `overlay/notch` (untested) |
 | Memory leak (fixed) | `bluebinder` opened HCI sockets in a loop and Samsung's stubbed `hci_sock_release` leaked each one (~3 GB of `kmalloc-2048` in 40 s, then OOM / black screen). Fixed by restoring `hci_sock_create()`/`hci_sock_release()` |
 
@@ -24,17 +24,19 @@ helper investigations in [`docs/codex`](docs/codex).
 ## Layout
 
 - `kernel/halium.fragment` – config fragment merged over `exynos9610-a50_core_defconfig`
-  (Halium options, SELinux as the active LSM in permissive mode, built-in audio firmware, RFKILL, SLUB_DEBUG, LTO off, ...).
+  (Halium options, AppArmor as the active LSM, built-in audio firmware, RFKILL, SLUB_DEBUG, LTO off, ...).
 - `kernel/patches/0001-halium-a50.patch` – patches on top of FreshROMs
   `android_kernel_samsung_exynos9610_mint` (`bec0c2aff1ee`, branch `android-14.0`):
   EMS scheduler early-init guard (boot panic), `security/security.c` hook-chain fix (usercopy panic),
   **`hci_sock_create()` restored** (Samsung stubbed it out, BlueZ then crashed the kernel), Bluetooth `BUG_ON` removed,
   **USB configfs gadget made stock-like** (Samsung's UEVENT mode parks functions in `gi->linked_func`, so usb-moded's bind failed with -EINVAL and looped),
+  **AppArmor is the major LSM again, with a new `socket_getpeersec_stream` hook** (mainline 4.14 AppArmor lacks SO_PEERSEC for unix sockets, so D-Bus peers have no label and lomiri's media-hub aborts),
   bring-up safety net (a plain reboot in the first 3 minutes goes to recovery), plus small fixes for clang 21.
   KernelSU is disabled via config (`CONFIG_KSU=n`).
 - `tools/build-kernel.sh`, `tools/build-boot.sh` – out-of-tree clang build and boot.img packaging.
 - `device/deviceinfo` – UBports-style device info.
 - `overlay/rootfs/` – files for the Ubuntu rootfs image:
+  - `usr/share/halium-overlay/vendor/etc/init/vndservicemanager.rc` – runs the GSI `servicemanager` as vndservicemanager (the vendor binary aborts without kernel SELinux).
   - `usr/share/halium-overlay/vendor/etc/init/init.exynos9610.usb.rc` – empty overlay so Android does not create its own USB gadget
     (must be in the rootfs; `/opt/halium-overlay` is mounted too late).
   - `etc/pulse/touch.pa` – `module-droid-discover` commented out; `etc/pulse/daemon.conf.d/50-halium-debug.conf` – verbose pulse log.
@@ -44,6 +46,8 @@ helper investigations in [`docs/codex`](docs/codex).
   - `66-halium-a50.rules` – `0666` on `binder/hwbinder/vndbinder/ion/mali0/...`. **Without this Lomiri aborts with
     `gralloc-mapper is missing` and the screen flickers in a loop.**
   - `usb-moded.service.d/90-halium-limit.conf` – start-rate limit for usb-moded.
+  - `halium-audio-route`, `halium-audio-prio`, `halium-wlan-up`, `halium-wifi-single-sta` services and `overlay/userdata/*.sh` – speaker route, PulseAudio thread priority, Wi-Fi fixes; `home-phablet/.config/systemd/user/halium-alsa-sink.service` – the ALSA sink.
+  - `halium-sshd.service` – debug sshd (key-only, add your own key to `/etc/ssh/halium_authorized_keys`).
   - `halium-livelog.service`, `halium-memwatch.service` (+ `overlay/userdata/halium-memwatch.sh`) – debug only: live logs and slab/memory watcher in `/userdata/live`.
 - `overlay/notch/` – experimental Lomiri panel diff for the notch.
 

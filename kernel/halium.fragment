@@ -99,7 +99,7 @@ CONFIG_SECURITY_APPARMOR=y
 CONFIG_SECURITY_YAMA=y
 CONFIG_INTEGRITY_SIGNATURE=y
 CONFIG_EVM=y
-CONFIG_DEFAULT_SECURITY="selinux"
+CONFIG_DEFAULT_SECURITY="apparmor"
 CONFIG_AUDITSYSCALL=y
 CONFIG_AUDIT_TREE=y
 CONFIG_AUDIT_WATCH=y
@@ -116,7 +116,7 @@ CONFIG_BT_HIDP=y
 CONFIG_NETFILTER_XT_TARGET_AUDIT=y
 CONFIG_CONSOLE_TRANSLATIONS=y
 CONFIG_SECURITY_APPARMOR_BOOTPARAM_VALUE=1
-CONFIG_SECURITY_SELINUX_BOOTPARAM_VALUE=1
+CONFIG_SECURITY_SELINUX_BOOTPARAM_VALUE=0
 CONFIG_SECURITY_TOMOYO_MAX_ACCEPT_ENTRY=2048
 CONFIG_SECURITY_TOMOYO_MAX_AUDIT_LOG=1024
 CONFIG_SECURITY_TOMOYO_POLICY_LOADER="/sbin/tomoyo-init"
@@ -124,7 +124,7 @@ CONFIG_SECURITY_TOMOYO_ACTIVATION_TRIGGER="/sbin/init"
 CONFIG_MEMCG=y
 CONFIG_MEMCG_SWAP=y
 CONFIG_SECURITY_SMACK=n
-CONFIG_DEFAULT_SECURITY_SELINUX=y
+CONFIG_DEFAULT_SECURITY_APPARMOR=y
 CONFIG_FW_LOADER_USER_HELPER_FALLBACK=n
 CONFIG_ANDROID_BINDER_DEVICES="binder,hwbinder,vndbinder,anbox-binder,anbox-hwbinder,anbox-vndbinder"
 
@@ -132,7 +132,7 @@ CONFIG_ANDROID_BINDER_DEVICES="binder,hwbinder,vndbinder,anbox-binder,anbox-hwbi
 CONFIG_KSU=n
 
 # Samsung passes console=ram in DT and ignores the boot header cmdline.
-CONFIG_CMDLINE="quiet androidboot.init_fatal_panic=true androidboot.init_fatal_reboot_target=recovery rcu_nocbs=0-3 noirqdebug nosoftlockup mce=ignore_ce cgroup_disable=pressure console=tty0 security=selinux selinux=1 enforcing=0 androidboot.selinux=permissive systemd.log_target=kmsg systemd.log_level=info slub_debug=U,kmalloc-2048"
+CONFIG_CMDLINE="quiet androidboot.init_fatal_panic=true androidboot.init_fatal_reboot_target=recovery rcu_nocbs=0-3 noirqdebug nosoftlockup mce=ignore_ce cgroup_disable=pressure console=tty0 security=apparmor apparmor=1 androidboot.selinux=permissive systemd.log_target=kmsg systemd.log_level=info"
 
 # Audio DSP (ABOX/calliope) and TFA9872 amp firmware must exist at driver probe, before rootfs is mounted.
 CONFIG_EXTRA_FIRMWARE="calliope_sram.bin calliope_dram.bin calliope_iva.bin Tfa9872.cnt"

@@ -1,0 +1,12 @@
+[Unit]
+Description=Halium A50: ALSA speaker sink for PulseAudio
+After=pulseaudio.service
+Requires=pulseaudio.service
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/bin/sh -c "pactl list short sinks | grep -q sink.speaker || pactl load-module module-alsa-sink device=hw:0,0 sink_name=sink.speaker rate=48000 channels=2 format=s16le tsched=0 fragments=32 fragment_size=2048; pactl set-default-sink sink.speaker"
+
+[Install]
+WantedBy=default.target

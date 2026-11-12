@@ -1,0 +1,12 @@
+[Unit]
+Description=Halium: keep only wlan0 managed (SCSC firmware panics with two STA interfaces)
+Before=NetworkManager.service
+After=local-fs.target
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/bin/sh -c "mkdir -p /run/NetworkManager/conf.d && printf \"[keyfile]\\nunmanaged-devices=interface-name:wlan1;interface-name:p2p0;interface-name:p2p-dev-wlan1\\n\" > /run/NetworkManager/conf.d/90-halium-wifi.conf"
+
+[Install]
+WantedBy=multi-user.target

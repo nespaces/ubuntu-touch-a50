@@ -1,0 +1,16 @@
+[Unit]
+Description=Halium bring-up: key-only sshd for root (debug)
+After=network.target local-fs.target
+Wants=network.target
+
+[Service]
+ExecStartPre=/usr/bin/ssh-generate-hostkeys
+ExecStartPre=/usr/sbin/sshd -t
+ExecStart=/usr/sbin/sshd -D -o PasswordAuthentication=no -o PubkeyAuthentication=yes -o PermitRootLogin=prohibit-password -o AuthorizedKeysFile=/etc/ssh/halium_authorized_keys -o UsePAM=no
+Restart=on-failure
+RuntimeDirectory=sshd
+RuntimeDirectoryMode=0755
+RuntimeDirectoryPreserve=yes
+
+[Install]
+WantedBy=multi-user.target

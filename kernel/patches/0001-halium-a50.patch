@@ -352,6 +352,63 @@ index fc32f5bc0..5f89dcdcd 100644
  	return 0;
  }
  
+diff --git a/security/apparmor/lsm.c b/security/apparmor/lsm.c
+index b9dcf7ec9..3d81174af 100644
+--- a/security/apparmor/lsm.c
++++ b/security/apparmor/lsm.c
+@@ -736,6 +736,44 @@ static int apparmor_task_kill(struct task_struct *target, struct siginfo *info,
+ 	return error;
+ }
+ 
++/*
++ * Halium: mainline 4.14 AppArmor has no SO_PEERSEC for unix sockets (Ubuntu carries it as a patch).
++ * lomiri services (media-hub, trust-store) read the D-Bus peer's AppArmor label this way and
++ * abort on an empty label. Report the label of the socket's peer credentials.
++ */
++static int apparmor_socket_getpeersec_stream(struct socket *sock,
++					     char __user *optval,
++					     int __user *optlen, unsigned int len)
++{
++	struct sock *sk = sock->sk;
++	struct aa_label *label, *peer;
++	char *name = NULL;
++	int slen, error = 0;
++
++	if (!sk || sk->sk_family != PF_UNIX || !sk->sk_peer_cred)
++		return -ENOPROTOOPT;
++
++	label = begin_current_label_crit_section();
++	peer = aa_get_newest_cred_label(sk->sk_peer_cred);
++	slen = aa_label_asxprint(&name, labels_ns(label), peer,
++				 FLAG_SHOW_MODE | FLAG_VIEW_SUBNS |
++				 FLAG_HIDDEN_UNCONFINED, GFP_KERNEL);
++	aa_put_label(peer);
++	if (slen < 0) {
++		error = -ENOMEM;
++	} else {
++		if (slen > len)
++			error = -ERANGE;
++		else if (copy_to_user(optval, name, slen))
++			error = -EFAULT;
++		if (!error && put_user(slen, optlen))
++			error = -EFAULT;
++		kfree(name);
++	}
++	end_current_label_crit_section(label);
++	return error;
++}
++
+ static struct security_hook_list apparmor_hooks[] __lsm_ro_after_init = {
+ 	LSM_HOOK_INIT(ptrace_access_check, apparmor_ptrace_access_check),
+ 	LSM_HOOK_INIT(ptrace_traceme, apparmor_ptrace_traceme),
+@@ -781,6 +819,7 @@ static struct security_hook_list apparmor_hooks[] __lsm_ro_after_init = {
+ 
+ 	LSM_HOOK_INIT(task_setrlimit, apparmor_task_setrlimit),
+ 	LSM_HOOK_INIT(task_kill, apparmor_task_kill),
++	LSM_HOOK_INIT(socket_getpeersec_stream, apparmor_socket_getpeersec_stream),
+ };
+ 
+ /*
 diff --git a/security/sdp/dd_core.c b/security/sdp/dd_core.c
 index 53606195e..0f00f2ca2 100644
 --- a/security/sdp/dd_core.c
